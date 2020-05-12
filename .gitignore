@@ -1,7 +1,7 @@
-.log
-.html
-.db
-goaccess/*.mmdb
-goaccess/*.txt
+*.log
+*.html
+*.db
+goaccess/**/*.mmdb
+goaccess/**/*.txt
 nginx/sites-available/*.conf
 !nginx/sites-available/example.com.conf

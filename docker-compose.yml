@@ -1,4 +1,4 @@
-version: '3'
+version: '3.7'
 
 services:
   nginx:
@@ -12,24 +12,45 @@ services:
     networks:
       - proxy
     ports:
-      - 80:80
+      - mode: host
+        protocol: tcp
+        published: 80
+        target: 80
 
   goaccess:
     build: ./goaccess
-    ports:
-      - 7890:7890
     volumes:
       - ./goaccess/goaccess.conf:/srv/config/goaccess.conf
       - ./goaccess/data:/srv/data
       - ./goaccess/html:/srv/report
       - ./goaccess/GeoLite2-City:/usr/local/share/GeoIP
       - ./nginx/logs:/srv/logs
-    networks:
-      - goaccess
     environment:
       - TZ=Europe/Sofia
     command: ["--no-global-config", "--config-file=/srv/config/goaccess.conf", "--log-file=/srv/logs/example.com_access.log"]
+    deploy:
+      mode: replicated
+      replicas: 0
+      labels:
+        - "swarm.cronjob.enable=true"
+        - "swarm.cronjob.schedule=*/5 * * * *"
+        - "swarm.cronjob.skip-running=false"
+      restart_policy:
+        condition: none
+    depends_on:
+      - swarm-cronjob
 
+  swarm-cronjob:
+    image: crazymax/swarm-cronjob
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    environment:
+      - "TZ=Europe/Sofia"
+      - "LOG_LEVEL=info"
+      - "LOG_JSON=false"
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
 networks:
   proxy:
-  goaccess:
